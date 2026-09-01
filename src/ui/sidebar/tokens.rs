@@ -1,7 +1,4 @@
-use crate::config::{
-    AgentSidebarToken, AgentsSidebarConfig, SidebarTokenStyle, SpaceSidebarToken,
-    SpacesSidebarConfig,
-};
+use crate::config::{AgentSidebarToken, AgentsSidebarConfig, SidebarTokenStyle, SpaceSidebarToken};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ResolvedToken {
@@ -105,13 +102,6 @@ pub(crate) struct SpaceTokenContext<'a> {
     pub(crate) suppress_git_details: bool,
 }
 
-pub(crate) fn space_rows(
-    config: &SpacesSidebarConfig,
-    context: SpaceTokenContext<'_>,
-) -> Vec<Vec<ResolvedToken>> {
-    space_rows_from(&config.rows, context)
-}
-
 pub(crate) fn space_rows_from(
     rows: &[Vec<SpaceSidebarToken>],
     context: SpaceTokenContext<'_>,
@@ -167,7 +157,7 @@ pub(crate) fn separator(previous: &ResolvedToken, current: &ResolvedToken) -> &'
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{AgentSidebarToken, SpaceSidebarToken};
+    use crate::config::{AgentSidebarToken, SpaceSidebarToken, SpacesSidebarConfig};
 
     struct Entry {
         workspace: String,
@@ -319,8 +309,8 @@ mod tests {
         let config = SpacesSidebarConfig::default();
 
         assert_eq!(
-            space_rows(
-                &config,
+            space_rows_from(
+                &config.rows,
                 SpaceTokenContext {
                     workspace: "feature",
                     branch: Some("worktree/feature"),
@@ -390,8 +380,8 @@ mod tests {
         };
 
         assert_eq!(
-            space_rows(
-                &config,
+            space_rows_from(
+                &config.rows,
                 SpaceTokenContext {
                     workspace: "repo",
                     branch: None,
