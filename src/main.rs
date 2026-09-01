@@ -358,6 +358,11 @@ const DEFAULT_CONFIG: &str = r##"# herdr configuration
 # Blank rows between space entries. Set to 1 to restore the previous spacing.
 # row_gap = 0
 # rows = [["state_icon", "workspace"], ["branch", "git_status"]]
+# Rows for worktree children nested under a repo parent. Unset by default: children
+# reuse `rows` with branch and git_status suppressed, and an auto-named child shows
+# its branch in place of the label. Set child_rows to control them directly, which
+# is how same-labeled worktree siblings can each show their own branch.
+# child_rows = [["state_icon", "workspace", "branch"]]
 
 # Background notification popup delivery
 [ui.toast]

@@ -134,9 +134,14 @@ pub(crate) fn space_rows(
     config: &SpacesSidebarConfig,
     context: SpaceTokenContext<'_>,
 ) -> Vec<Vec<ResolvedToken>> {
-    config
-        .rows
-        .iter()
+    space_rows_from(&config.rows, context)
+}
+
+pub(crate) fn space_rows_from(
+    rows: &[Vec<SpaceSidebarToken>],
+    context: SpaceTokenContext<'_>,
+) -> Vec<Vec<ResolvedToken>> {
+    rows.iter()
         .filter_map(|row| {
             let resolved = row
                 .iter()
@@ -555,6 +560,50 @@ rows = [[{ token = "$load", rules = [{ lt = 50, hide = true }] }], ["workspace"]
             vec![vec![
                 ResolvedToken::unstyled(ResolvedTokenKind::StateIcon),
                 ResolvedToken::unstyled(ResolvedTokenKind::Workspace("feature".into())),
+            ]]
+        );
+    }
+
+    #[test]
+    fn child_rows_default_to_parent_rows_with_git_details_suppressed() {
+        let config = SpacesSidebarConfig::default();
+        let (rows, suppress_git_details) = config.rows_for_child();
+
+        assert_eq!(rows, &config.rows);
+        assert!(suppress_git_details);
+    }
+
+    #[test]
+    fn explicit_child_rows_resolve_branch_for_nested_worktrees() {
+        let config = SpacesSidebarConfig {
+            child_rows: Some(vec![vec![
+                SpaceSidebarToken::StateIcon,
+                SpaceSidebarToken::Workspace,
+                SpaceSidebarToken::Branch,
+            ]]),
+            ..Default::default()
+        };
+        let (rows, suppress_git_details) = config.rows_for_child();
+
+        assert!(!suppress_git_details);
+        assert_eq!(
+            space_rows_from(
+                rows,
+                SpaceTokenContext {
+                    workspace: "agent-pulse",
+                    branch: Some("fix/tps-unknown-model-preseed"),
+                    state_text: "idle",
+                    ahead_behind: Some((2, 1)),
+                    tokens: &std::collections::HashMap::new(),
+                    suppress_git_details,
+                },
+            ),
+            vec![vec![
+                ResolvedToken::unstyled(ResolvedTokenKind::StateIcon),
+                ResolvedToken::unstyled(ResolvedTokenKind::Workspace("agent-pulse".into())),
+                ResolvedToken::unstyled(ResolvedTokenKind::Branch(
+                    "fix/tps-unknown-model-preseed".into()
+                )),
             ]]
         );
     }
