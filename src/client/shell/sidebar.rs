@@ -575,7 +575,17 @@ fn workspace_rows(
     indented: bool,
     config: &SpacesSidebarConfig,
 ) -> Vec<Vec<crate::ui::ResolvedToken>> {
-    let label = if indented && !workspace.custom_label {
+    let (rows, suppress_git_details) = if indented {
+        config.rows_for_child()
+    } else {
+        (&config.rows, false)
+    };
+    // Auto-named children fall back to the branch so the tree stays readable.
+    // Explicit child_rows keep the label as-is and let a `branch` token carry
+    // the branch, which is the only way to distinguish renamed siblings.
+    let substitute_branch_label =
+        indented && !workspace.custom_label && config.child_rows.is_none();
+    let label = if substitute_branch_label {
         workspace
             .branch
             .as_deref()
@@ -585,15 +595,15 @@ fn workspace_rows(
         &workspace.label
     };
     let token_values = workspace.tokens.iter().cloned().collect::<HashMap<_, _>>();
-    crate::ui::sidebar_space_rows(
-        config,
+    crate::ui::sidebar_space_rows_from(
+        rows,
         crate::ui::SpaceTokenContext {
             workspace: label,
             branch: workspace.branch.as_deref(),
             state_text: status_text(status),
             ahead_behind: workspace.git_ahead_behind,
             tokens: &token_values,
-            suppress_git_details: indented,
+            suppress_git_details,
         },
     )
 }

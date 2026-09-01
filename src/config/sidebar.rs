@@ -18,6 +18,20 @@ where
     Ok(rows)
 }
 
+fn deserialize_optional_sidebar_rows<'de, D, T>(
+    deserializer: D,
+) -> Result<Option<Vec<Vec<T>>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    let rows = Option::<Vec<Vec<T>>>::deserialize(deserializer)?;
+    if let Some(rows) = rows.as_ref() {
+        validate_sidebar_rows(rows).map_err(serde::de::Error::custom)?;
+    }
+    Ok(rows)
+}
+
 fn validate_sidebar_rows<T>(rows: &[Vec<T>]) -> Result<(), String> {
     if rows.len() > MAX_SIDEBAR_ROWS {
         return Err(format!(
@@ -409,7 +423,24 @@ impl Default for AgentsSidebarConfig {
 pub struct SpacesSidebarConfig {
     #[serde(deserialize_with = "deserialize_sidebar_rows")]
     pub rows: SpaceSidebarRows,
+    /// Rows for worktree children nested under a repo parent. When unset the
+    /// children reuse `rows` with git detail tokens suppressed, which keeps the
+    /// tree compact but leaves same-labeled children indistinguishable.
+    #[serde(default, deserialize_with = "deserialize_optional_sidebar_rows")]
+    pub child_rows: Option<SpaceSidebarRows>,
     pub row_gap: u16,
+}
+
+impl SpacesSidebarConfig {
+    /// Rows to render for a nested worktree child, plus whether git detail
+    /// tokens stay suppressed. Explicit `child_rows` opt into git details so a
+    /// configured `branch` token actually resolves.
+    pub(crate) fn rows_for_child(&self) -> (&SpaceSidebarRows, bool) {
+        match self.child_rows.as_ref() {
+            Some(rows) => (rows, false),
+            None => (&self.rows, true),
+        }
+    }
 }
 
 impl Default for SpacesSidebarConfig {
@@ -419,6 +450,7 @@ impl Default for SpacesSidebarConfig {
                 vec![SpaceSidebarToken::StateIcon, SpaceSidebarToken::Workspace],
                 vec![SpaceSidebarToken::Branch, SpaceSidebarToken::GitStatus],
             ],
+            child_rows: None,
             row_gap: DEFAULT_SIDEBAR_ROW_GAP,
         }
     }
