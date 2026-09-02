@@ -318,8 +318,8 @@ rows = [[{ token = "$load", rules = [{ lt = 50, dim = true }] }]]
             assert_eq!(rows[0][0].kind, ResolvedTokenKind::Custom(value.into()));
             assert_eq!(rows[0][0].style.bold, bold);
             assert_eq!(rows[0][0].style.dim, dim);
-            let spaces = space_rows(
-                &config.spaces,
+            let spaces = space_rows_from(
+                &config.spaces.rows,
                 SpaceTokenContext {
                     workspace: "repo",
                     branch: None,
